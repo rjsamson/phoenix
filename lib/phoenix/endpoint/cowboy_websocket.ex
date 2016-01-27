@@ -7,7 +7,11 @@ defmodule Phoenix.Endpoint.CowboyWebSocket do
   @already_sent {:plug_conn, :sent}
 
   def init({transport, :http}, req, {module, opts}) when transport in [:tcp, :ssl] do
-    conn = @connection.conn(req, transport)
+    {bindings, _} = :cowboy_req.bindings(req)
+    params = Enum.reduce(bindings, %{}, fn ({key, val}, acc) ->
+      Map.put(acc, Atom.to_string(key), val)
+    end)
+    conn = @connection.conn(req, transport) |> Map.put(:params, params)
     try do
       case module.init(conn, opts) do
         {:ok, %{adapter: {@connection, req}}, args} ->
